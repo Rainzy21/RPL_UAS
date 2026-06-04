@@ -6,6 +6,8 @@ interface Props {
   task: Task;
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
+  onClick: () => void;
+  isLocked: boolean;
 }
 
 const PRIORITY_CONFIG = {
@@ -33,18 +35,21 @@ function getDueBadge(dueDateStr: string, isCompleted: boolean) {
   return { label: formatted, cls: 'border-white/15 text-white/45 bg-white/5' };
 }
 
-export default function TaskCard({ task, onToggle, onDelete }: Props) {
+export default function TaskCard({ task, onToggle, onDelete, onClick, isLocked }: Props) {
   const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.Medium;
   const dueBadge = getDueBadge(task.due_date, task.is_completed);
 
   return (
-    <div className={`group flex items-start gap-3 px-3 py-3 rounded-lg transition-all duration-150 cursor-pointer
-      ${task.is_completed ? 'opacity-50' : 'hover:bg-white/[0.04]'}`}
+    <div 
+      onClick={onClick}
+      className={`group flex items-start gap-3 px-3 py-3 rounded-lg transition-all duration-150 cursor-pointer
+      ${task.is_completed ? 'opacity-50' : 'hover:bg-white/[0.04]'}
+      ${isLocked ? 'ring-1 ring-violet-500/50 bg-violet-500/5' : ''}`}
     >
       {/* Checkbox */}
       <button
         id={`check-${task.id}`}
-        onClick={() => onToggle(task.id, !task.is_completed)}
+        onClick={(e) => { e.stopPropagation(); onToggle(task.id, !task.is_completed); }}
         className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-full border flex items-center justify-center transition-all duration-150
           ${task.is_completed
             ? 'bg-violet-600 border-violet-600'
@@ -92,7 +97,7 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
       {/* Delete */}
       <button
         id={`delete-${task.id}`}
-        onClick={() => onDelete(task.id)}
+        onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
         className="opacity-0 group-hover:opacity-100 mt-0.5 flex-shrink-0 p-1 rounded text-white/25 hover:text-red-400 transition-all duration-150"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

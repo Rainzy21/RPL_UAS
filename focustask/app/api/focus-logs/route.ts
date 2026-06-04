@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET() {
-  if (!supabase) return NextResponse.json([], { status: 200 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { data, error } = await supabase
     .from('focus_logs')
@@ -32,14 +37,19 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const body = await req.json();
   const { task_id, duration_seconds, session_type } = body;
 
   const { data, error } = await supabase
     .from('focus_logs')
-    .insert([{ task_id: task_id || null, duration_seconds, session_type }])
+    .insert([{ task_id: task_id || null, duration_seconds, session_type, user_id: user.id }])
     .select()
     .single();
 

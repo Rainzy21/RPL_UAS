@@ -6,6 +6,7 @@
 -- 1. Tasks table
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   priority TEXT NOT NULL DEFAULT 'Medium' CHECK (priority IN ('Low','Medium','High')),
   estimated_hours INTEGER NOT NULL DEFAULT 1 CHECK (estimated_hours > 0),
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- 2. Focus logs table
 CREATE TABLE IF NOT EXISTS focus_logs (
   log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
   duration_seconds INTEGER NOT NULL CHECK (duration_seconds > 0),
   session_type TEXT NOT NULL DEFAULT 'Focus',
@@ -32,5 +34,5 @@ CREATE INDEX IF NOT EXISTS idx_focus_logs_task_id ON focus_logs(task_id);
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE focus_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all on tasks" ON tasks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all on focus_logs" ON focus_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable ALL for users based on user_id" ON tasks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable ALL for users based on user_id" ON focus_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

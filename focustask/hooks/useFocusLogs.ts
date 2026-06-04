@@ -18,12 +18,13 @@ export function useFocusLogs() {
     setLoading(true);
     try {
       const res = await fetch('/api/focus-logs');
-      const data: FocusLog[] = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
       setLogs(data);
 
       // Compute analytics from raw logs
       const todayStr = new Date().toISOString().slice(0, 10);
-      const todayLogs = data.filter(l => l.created_at.slice(0, 10) === todayStr && l.session_type === 'Focus');
+      const todayLogs = data.filter((l: FocusLog) => l.created_at.slice(0, 10) === todayStr && l.session_type === 'Focus');
       const focusTimeToday = todayLogs.reduce((s, l) => s + l.duration_seconds, 0);
       const sessionsDone = todayLogs.length;
 
@@ -51,6 +52,8 @@ export function useFocusLogs() {
       }
 
       setAnalytics({ focusTimeToday, sessionsDone, tasksCompleted, dayStreak: streak, weeklyMinutes });
+    } catch (err: any) {
+      console.error('Error fetching logs:', err.message);
     } finally {
       setLoading(false);
     }

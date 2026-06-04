@@ -29,6 +29,7 @@ const SESSION_BADGE: Record<string, string> = {
   'Focus':       'border-white/15 text-white/60 bg-transparent',
   'Short Break': 'border-white/15 text-white/60 bg-transparent',
   'Long Break':  'border-white/15 text-white/60 bg-transparent',
+  'Task Done':   'border-emerald-500/20 text-emerald-400 bg-emerald-500/10',
 };
 
 export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }: Props) {
@@ -183,7 +184,7 @@ export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }
                     )}
                   </div>
                   <span className="text-[12px] font-medium text-white/70 text-right">
-                    {formatDuration(log.duration_seconds)}
+                    {log.session_type === 'Task Done' ? '-' : formatDuration(log.duration_seconds)}
                   </span>
                   <span className="text-[11px] text-white/35 text-right leading-tight">
                     {formatTime(log.created_at)}

@@ -6,7 +6,7 @@ import { TimerState, TimerMode } from '@/types';
 const LS_KEY = 'focustask_timer_state';
 
 const DEFAULT_DURATIONS: Record<TimerMode, number> = {
-  'Focus': 25 * 60,
+  'Focus': 30 * 60,
   'Short Break': 5 * 60,
   'Long Break': 15 * 60,
 };
@@ -33,7 +33,7 @@ function saveState(state: TimerState) {
   localStorage.setItem(LS_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
 }
 
-export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, taskTitle: string | null) => void) {
+export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, taskTitle: string | null, durationSeconds: number) => void) {
   const [state, setState] = useState<TimerState>(() => {
     const saved = loadState();
     if (saved) return saved;
@@ -63,7 +63,7 @@ export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, ta
         setState(prev => {
           if (prev.remainingSeconds <= 1) {
             clearInterval(intervalRef.current!);
-            onCompleteRef.current(prev.mode, prev.lockedTaskId, prev.lockedTaskTitle);
+            onCompleteRef.current(prev.mode, prev.lockedTaskId, prev.lockedTaskTitle, prev.totalSeconds);
             return { ...prev, remainingSeconds: 0, isRunning: false };
           }
           return { ...prev, remainingSeconds: prev.remainingSeconds - 1 };
