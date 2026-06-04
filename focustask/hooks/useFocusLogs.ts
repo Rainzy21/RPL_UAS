@@ -28,8 +28,19 @@ export function useFocusLogs() {
     setError(null);
     try {
       const res = await fetch('/api/focus-logs');
+      if (!res.ok) {
+        const isJson = res.headers.get('content-type')?.includes('application/json');
+        if (isJson) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to fetch logs');
+        } else {
+          const text = await res.text();
+          console.error('Non-JSON response from server:', text);
+          throw new Error(`Server error: ${res.status} ${res.statusText}`);
+        }
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
       setLogs(data.logs ?? []);
       setAnalytics({
         ...(data.analytics ?? emptyAnalytics),
