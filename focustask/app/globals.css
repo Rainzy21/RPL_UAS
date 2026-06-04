@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base: #0d0d11;
+  --bg-panel: #131318;
+  --bg-card: #1a1a21;
+  --bg-card-hover: #1f1f28;
+  --bg-input: #1e1e26;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.12);
+  --accent: #7c3aed;
+  --accent-light: #a78bfa;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg-base);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* Panel */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* Input base */
+.input-base {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-base::placeholder { color: rgba(255,255,255,0.25); }
+.input-base:focus { border-color: rgba(124,58,237,0.5); }
+
+/* Timer circle */
+.timer-circle {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+/* Slide-down animation */
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+  to { opacity: 1; max-height: 260px; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 1; max-height: 260px; }
+  to { opacity: 0; max-height: 0; }
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.25s ease forwards; }
+
+/* Focus visible ring — only for keyboard nav on inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(124,58,237,0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
