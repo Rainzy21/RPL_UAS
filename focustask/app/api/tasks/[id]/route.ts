@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { jsonDbError, jsonError } from '@/lib/api-response';
+import { formatZodError, patchTaskSchema } from '@/lib/validation';
 
 export async function PATCH(
   req: Request,
@@ -7,22 +9,39 @@ export async function PATCH(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return jsonError('Unauthorized', 401);
   }
 
   const { id } = await params;
-  const body = await req.json();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError('Invalid JSON body', 400);
+  }
+
+  const parsed = patchTaskSchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(formatZodError(parsed.error), 400);
+  }
+
+  const patch = Object.fromEntries(
+    Object.entries(parsed.data).filter(([, value]) => value !== undefined)
+  );
 
   const { data, error } = await supabase
     .from('tasks')
-    .update(body)
+    .update(patch)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return jsonDbError('PATCH /api/tasks/[id]', error);
+  if (!data) return jsonError('Task not found', 404);
   return NextResponse.json(data);
 }
 
@@ -32,9 +51,9 @@ export async function DELETE(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return jsonError('Unauthorized', 401);
   }
 
   const { id } = await params;
@@ -42,8 +61,9 @@ export async function DELETE(
   const { error } = await supabase
     .from('tasks')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return jsonDbError('DELETE /api/tasks/[id]', error);
   return NextResponse.json({ success: true });
 }

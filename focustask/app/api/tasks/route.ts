@@ -1,40 +1,47 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { jsonDbError, jsonError } from '@/lib/api-response';
+import { createTaskSchema, formatZodError } from '@/lib/validation';
 
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return jsonError('Unauthorized', 401);
   }
 
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
+    .eq('user_id', user.id)
     .order('due_date', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return jsonDbError('GET /api/tasks', error);
   return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return jsonError('Unauthorized', 401);
   }
 
-  const body = await req.json();
-  const { title, priority = 'Medium', estimated_hours = 1, due_date } = body;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueDate = new Date(due_date);
-  if (dueDate < today) {
-    return NextResponse.json({ error: 'Due date cannot be in the past' }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError('Invalid JSON body', 400);
   }
+
+  const parsed = createTaskSchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(formatZodError(parsed.error), 400);
+  }
+
+  const { title, priority, estimated_hours, due_date } = parsed.data;
 
   const { data, error } = await supabase
     .from('tasks')
@@ -42,6 +49,6 @@ export async function POST(req: Request) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return jsonDbError('POST /api/tasks', error);
   return NextResponse.json(data, { status: 201 });
 }

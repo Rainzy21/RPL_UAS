@@ -1,13 +1,25 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
-export default function LoginPage() {
+const AUTH_ERRORS: Record<string, string> = {
+  "auth-failed": "Sign-in failed. Please try again.",
+};
+
+function LoginForm() {
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const callbackError = searchParams.get("error");
+  const authMessage = callbackError
+    ? (AUTH_ERRORS[callbackError] ?? "Sign-in failed. Please try again.")
+    : null;
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setLoginError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -17,10 +29,12 @@ export default function LoginPage() {
     });
 
     if (error) {
-      alert("Error logging in: " + error.message);
+      setLoginError("Could not start sign-in. Please try again.");
       setLoading(false);
     }
   };
+
+  const displayError = loginError ?? authMessage;
 
   return (
     <div
@@ -45,11 +59,21 @@ export default function LoginPage() {
             />
           </svg>
         </div>
-        
+
         <h1 className="text-2xl font-bold text-white mb-2">DeepSession</h1>
         <p className="text-sm text-white/50 mb-8 leading-relaxed">
           Unlock your productivity potential. Sign in to sync your tasks and focus logs securely.
         </p>
+
+        {displayError && (
+          <p
+            className="w-full mb-4 px-3 py-2 rounded-lg text-[12px] text-left"
+            style={{ background: "rgba(248,113,113,0.1)", color: "#f87171" }}
+            role="alert"
+          >
+            {displayError}
+          </p>
+        )}
 
         <button
           onClick={handleGoogleLogin}
@@ -95,5 +119,22 @@ export default function LoginPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ background: "var(--bg-base)" }}
+        >
+          <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

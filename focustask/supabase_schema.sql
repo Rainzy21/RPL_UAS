@@ -1,6 +1,6 @@
 -- ============================================================
--- FocusTask — Supabase Database Setup
--- Run this in your Supabase SQL Editor
+-- DeepSession — Supabase Database Setup (canonical schema)
+-- Run this in your Supabase SQL Editor for new projects.
 -- ============================================================
 
 -- 1. Tasks table
@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS focus_logs (
   log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
-  duration_seconds INTEGER NOT NULL CHECK (duration_seconds > 0),
+  duration_seconds INTEGER NOT NULL CHECK (
+    duration_seconds > 0
+    OR (duration_seconds = 0 AND session_type = 'Task Done')
+  ),
   session_type TEXT NOT NULL DEFAULT 'Focus',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -34,5 +37,8 @@ CREATE INDEX IF NOT EXISTS idx_focus_logs_task_id ON focus_logs(task_id);
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE focus_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable ALL for users based on user_id" ON tasks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Enable ALL for users based on user_id" ON focus_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable ALL for users based on user_id" ON tasks
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Enable ALL for users based on user_id" ON focus_logs
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

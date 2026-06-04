@@ -15,7 +15,7 @@ type FilterTab = "All" | "Active" | "Completed";
 const PRIORITIES: Task["priority"][] = ["Low", "Medium", "High"];
 
 export default function TaskManagement({ onTasksChange, onSelectTask, lockedTaskId }: Props) {
-  const { tasks, loading, fetchTasks, addTask, toggleTask, deleteTask } =
+  const { tasks, loading, error, clearError, fetchTasks, addTask, toggleTask, deleteTask } =
     useTasks();
   const [filter, setFilter] = useState<FilterTab>("All");
   const [showForm, setShowForm] = useState(false);
@@ -51,8 +51,8 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
       setEstimatedHours(1);
       setDueDate("");
       setShowForm(false);
-    } catch (err: any) {
-      setFormError(err.message);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to add task");
     } finally {
       setSubmitting(false);
     }
@@ -133,8 +133,7 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Task description..."
             style={fieldStyle}
-            className="w-full px-3 py-2.5 text-[13px] outline-none"
-            css-color="rgba(255,255,255,0.8)"
+            className="w-full px-3 py-2.5 text-[13px] text-white/80 outline-none"
           />
 
           {/* Due date */}
@@ -191,7 +190,7 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
           {/* Priority + hours — one row */}
           <div className="flex items-center gap-2">
             {/* Priority (separated buttons) */}
-            <div className="flex flex-2 gap-2">
+            <div className="flex flex-1 gap-2 min-w-0">
               {PRIORITIES.map((p) => (
                 <button
                   key={p}
@@ -212,7 +211,7 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
                     borderRadius: "10px",
                     outline: "none",
                   }}
-                  className="flex-4 py-2 text-[10px] font-bold transition-all duration-150 hover:opacity-80"
+                  className="flex-1 py-2 text-[10px] font-bold transition-all duration-150 hover:opacity-80"
                 >
                   {p}
                 </button>
@@ -293,6 +292,24 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
           </button>
         </form>
       </div>
+
+      {error && (
+        <div
+          className="mx-3 mb-2 px-3 py-2 rounded-lg text-[11px] flex items-center justify-between gap-2"
+          style={{ background: "rgba(248,113,113,0.1)", color: "#f87171" }}
+          role="alert"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={clearError}
+            className="text-white/50 hover:text-white/80 shrink-0"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ── Filter tabs ── */}
       <div className="flex items-center gap-0.5 px-3 mb-1.5">

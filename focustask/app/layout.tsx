@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'FocusTask — Productivity Dashboard',
-  description: 'Manage tasks, run Pomodoro sessions, and track your productivity with FocusTask.',
+  title: 'DeepSession — Productivity Dashboard',
+  description: 'Manage tasks, run Pomodoro sessions, and track your productivity with DeepSession.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
