@@ -11,18 +11,39 @@ const DEFAULT_DURATIONS: Record<TimerMode, number> = {
   'Long Break': 15 * 60,
 };
 
-function loadState(): TimerState | null {
+type SavedTimerState = TimerState & { savedAt?: number };
+
+type LoadResult = {
+  state: TimerState;
+  completeOnMount: boolean;
+};
+
+function loadState(): LoadResult | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
-    const parsed: TimerState & { savedAt: number } = JSON.parse(raw);
-    // Adjust remaining seconds if timer was running when page closed
+    const parsed: SavedTimerState = JSON.parse(raw);
+    let completeOnMount = false;
+
     if (parsed.isRunning && parsed.savedAt) {
       const elapsed = Math.floor((Date.now() - parsed.savedAt) / 1000);
       parsed.remainingSeconds = Math.max(0, parsed.remainingSeconds - elapsed);
+      if (parsed.remainingSeconds === 0) {
+        parsed.isRunning = false;
+        completeOnMount = true;
+      }
     }
-    return parsed;
+
+    const state: TimerState = {
+      mode: parsed.mode,
+      totalSeconds: parsed.totalSeconds,
+      remainingSeconds: parsed.remainingSeconds,
+      isRunning: parsed.isRunning,
+      lockedTaskId: parsed.lockedTaskId,
+      lockedTaskTitle: parsed.lockedTaskTitle,
+    };
+    return { state, completeOnMount };
   } catch {
     return null;
   }
@@ -33,30 +54,47 @@ function saveState(state: TimerState) {
   localStorage.setItem(LS_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
 }
 
+const defaultState: TimerState = {
+  mode: 'Focus',
+  totalSeconds: DEFAULT_DURATIONS['Focus'],
+  remainingSeconds: DEFAULT_DURATIONS['Focus'],
+  isRunning: false,
+  lockedTaskId: null,
+  lockedTaskTitle: null,
+};
+
 export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, taskTitle: string | null, durationSeconds: number) => void) {
-  const [state, setState] = useState<TimerState>(() => {
-    const saved = loadState();
-    if (saved) return saved;
+  const [initial] = useState(() => {
+    const loaded = loadState();
     return {
-      mode: 'Focus',
-      totalSeconds: DEFAULT_DURATIONS['Focus'],
-      remainingSeconds: DEFAULT_DURATIONS['Focus'],
-      isRunning: false,
-      lockedTaskId: null,
-      lockedTaskTitle: null,
+      state: loaded?.state ?? defaultState,
+      completeOnMount: loaded?.completeOnMount ?? false,
     };
   });
 
+  const [state, setState] = useState<TimerState>(initial.state);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
 
-  // Persist state to localStorage on every change
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!initial.completeOnMount) return;
+    onCompleteRef.current(
+      initial.state.mode,
+      initial.state.lockedTaskId,
+      initial.state.lockedTaskTitle,
+      initial.state.totalSeconds,
+    );
+  }, [initial]);
+
   useEffect(() => {
     saveState(state);
   }, [state]);
 
-  // Tick
   useEffect(() => {
     if (state.isRunning) {
       intervalRef.current = setInterval(() => {
@@ -77,8 +115,8 @@ export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, ta
     };
   }, [state.isRunning]);
 
-  const setMode = useCallback((mode: TimerMode, customSeconds?: number) => {
-    const secs = customSeconds ?? DEFAULT_DURATIONS[mode];
+  const setMode = useCallback((mode: TimerMode) => {
+    const secs = DEFAULT_DURATIONS[mode];
     setState(prev => ({
       ...prev,
       mode,
@@ -107,13 +145,9 @@ export function useTimer(onComplete: (mode: TimerMode, taskId: string | null, ta
       isRunning: false,
     })), []);
 
-  const lockTask = useCallback((taskId: string | null, taskTitle: string | null) => {
-    setState(prev => ({ ...prev, lockedTaskId: taskId, lockedTaskTitle: taskTitle }));
-  }, []);
-
   const progress = state.totalSeconds > 0
     ? ((state.totalSeconds - state.remainingSeconds) / state.totalSeconds) * 100
     : 0;
 
-  return { state, setMode, setCustomDuration, start, pause, reset, lockTask, progress };
+  return { state, setMode, setCustomDuration, start, pause, reset, progress };
 }

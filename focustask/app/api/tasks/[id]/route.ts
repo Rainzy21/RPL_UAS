@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { jsonDbError, jsonError } from '@/lib/api-response';
-import { formatZodError, patchTaskSchema } from '@/lib/validation';
+import { apiError, validationError } from '@/lib/api-errors';
+import { validateTaskPatch } from '@/lib/validation';
 
 export async function PATCH(
   req: Request,
@@ -11,7 +11,7 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return jsonError('Unauthorized', 401);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { id } = await params;
@@ -20,28 +20,20 @@ export async function PATCH(
   try {
     body = await req.json();
   } catch {
-    return jsonError('Invalid JSON body', 400);
+    return validationError('Invalid JSON body');
   }
 
-  const parsed = patchTaskSchema.safeParse(body);
-  if (!parsed.success) {
-    return jsonError(formatZodError(parsed.error), 400);
-  }
-
-  const patch = Object.fromEntries(
-    Object.entries(parsed.data).filter(([, value]) => value !== undefined)
-  );
+  const parsed = validateTaskPatch(body);
+  if (!parsed.ok) return validationError(parsed.error);
 
   const { data, error } = await supabase
     .from('tasks')
-    .update(patch)
+    .update(parsed.data)
     .eq('id', id)
-    .eq('user_id', user.id)
     .select()
     .single();
 
-  if (error) return jsonDbError('PATCH /api/tasks/[id]', error);
-  if (!data) return jsonError('Task not found', 404);
+  if (error) return apiError('PATCH /api/tasks/[id]', error);
   return NextResponse.json(data);
 }
 
@@ -53,7 +45,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return jsonError('Unauthorized', 401);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { id } = await params;
@@ -61,9 +53,8 @@ export async function DELETE(
   const { error } = await supabase
     .from('tasks')
     .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('id', id);
 
-  if (error) return jsonDbError('DELETE /api/tasks/[id]', error);
+  if (error) return apiError('DELETE /api/tasks/[id]', error);
   return NextResponse.json({ success: true });
 }

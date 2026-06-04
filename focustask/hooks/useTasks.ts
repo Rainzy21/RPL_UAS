@@ -4,8 +4,7 @@ import { useState, useCallback } from 'react';
 import { Task } from '@/types';
 
 function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return 'Something went wrong';
+  return err instanceof Error ? err.message : 'Something went wrong';
 }
 
 export function useTasks() {
@@ -19,7 +18,7 @@ export function useTasks() {
     try {
       const res = await fetch('/api/tasks');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to load tasks');
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch tasks');
       setTasks(data);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -34,44 +33,39 @@ export function useTasks() {
     estimated_hours: number,
     due_date: string
   ) => {
-    setError(null);
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, priority, estimated_hours, due_date }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? 'Failed to add task');
+    if (!res.ok) throw new Error(data.error);
     setTasks(prev => [...prev, data].sort((a, b) => a.due_date.localeCompare(b.due_date)));
     return data;
   }, []);
 
   const toggleTask = useCallback(async (id: string, is_completed: boolean) => {
-    setError(null);
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_completed }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? 'Failed to update task');
+    if (!res.ok) throw new Error(data.error);
 
     if (is_completed) {
-      const logRes = await fetch('/api/focus-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task_id: id,
-          duration_seconds: 0,
-          session_type: 'Task Done',
-        }),
-      });
-      if (!logRes.ok) {
-        const logData = await logRes.json().catch(() => ({}));
-        setError(
-          (logData as { error?: string }).error ??
-            'Task updated but activity log could not be saved'
-        );
+      try {
+        await fetch('/api/focus-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: id,
+            duration_seconds: 1,
+            session_type: 'Task Done',
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to log task completion', err);
       }
     }
 
@@ -79,16 +73,11 @@ export function useTasks() {
   }, []);
 
   const deleteTask = useCallback(async (id: string) => {
-    setError(null);
     const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error((data as { error?: string }).error ?? 'Failed to delete task');
-    }
+    if (!res.ok) throw new Error(data.error || 'Failed to delete task');
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const clearError = useCallback(() => setError(null), []);
-
-  return { tasks, loading, error, clearError, fetchTasks, addTask, toggleTask, deleteTask };
+  return { tasks, loading, error, fetchTasks, addTask, toggleTask, deleteTask };
 }

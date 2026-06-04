@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [lockedTaskId, setLockedTaskId] = useState<string | null>(null);
   const [lockedTaskTitle, setLockedTaskTitle] = useState<string | null>(null);
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionLogError, setSessionLogError] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -34,8 +34,8 @@ export default function DashboardPage() {
       taskTitle: string | null,
       durationSeconds: number,
     ) => {
-      setSessionError(null);
       try {
+        setSessionLogError(null);
         const res = await fetch("/api/focus-logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,18 +47,17 @@ export default function DashboardPage() {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          setSessionError(
-            (data as { error?: string }).error ?? "Failed to save session",
-          );
-          return;
+          throw new Error(data.error || "Failed to save session");
         }
         if (mode === "Focus") {
           setSessionCount((n) => n + 1);
           setIsTimerRunning(false);
         }
         setAnalyticsRefresh((n) => n + 1);
-      } catch {
-        setSessionError("Failed to save session. Check your connection.");
+      } catch (err: unknown) {
+        setSessionLogError(
+          err instanceof Error ? err.message : "Failed to save session",
+        );
       }
     },
     [],
@@ -96,24 +95,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {sessionError && (
-        <div
-          className="mx-5 mt-3 px-3 py-2 rounded-lg text-[12px] flex items-center justify-between gap-3"
-          style={{ background: "rgba(248,113,113,0.1)", color: "#f87171" }}
-          role="alert"
-        >
-          <span>{sessionError}</span>
-          <button
-            type="button"
-            onClick={() => setSessionError(null)}
-            className="text-white/50 hover:text-white/80 shrink-0"
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* ── Main scrollable area ── */}
       <main className="flex-1 overflow-y-auto">
         {/* Top row: Task (left) + Timer (right) */}
@@ -139,6 +120,9 @@ export default function DashboardPage() {
 
           {/* Timer panel */}
           <div className="panel flex flex-col min-h-[450px] lg:min-h-0">
+            {sessionLogError && (
+              <p className="mx-4 mt-3 text-[11px] text-red-400">{sessionLogError}</p>
+            )}
             <FocusTimer
               lockedTaskId={lockedTaskId}
               lockedTaskTitle={lockedTaskTitle}

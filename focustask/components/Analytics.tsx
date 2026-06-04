@@ -33,7 +33,7 @@ const SESSION_BADGE: Record<string, string> = {
 };
 
 export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }: Props) {
-  const { logs, analytics, loading, error, clearError, fetchLogs } = useFocusLogs();
+  const { logs, analytics, loading, error, fetchLogs } = useFocusLogs();
 
   useEffect(() => { fetchLogs(tasksCompleted); }, [fetchLogs, tasksCompleted, refreshTrigger]);
 
@@ -58,21 +58,7 @@ export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }
       </div>
 
       {error && (
-        <div
-          className="mb-4 px-3 py-2 rounded-lg text-[11px] flex items-center justify-between gap-2"
-          style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171' }}
-          role="alert"
-        >
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={clearError}
-            className="text-white/50 hover:text-white/80 shrink-0"
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
+        <p className="mb-4 text-[11px] text-red-400">{error}</p>
       )}
 
       {/* Two-column layout */}

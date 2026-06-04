@@ -20,6 +20,15 @@
 # production
 /build
 
+# docs
+/docs
+
+# Cursor / AI tooling
+AGENTS.md
+CLAUDE.md
+SKILL.md
+/skills/
+
 # misc
 .DS_Store
 *.pem

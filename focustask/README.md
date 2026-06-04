@@ -1,54 +1,69 @@
-# DeepSession
+# DeepSession (FocusTask)
 
-A Next.js productivity dashboard: task management, Pomodoro timer, and focus analytics backed by Supabase.
+A Pomodoro-style focus timer with task management and session analytics, built with Next.js and Supabase.
+
+## Features
+
+- Google OAuth via Supabase Auth
+- Task list with priorities, due dates, and completion tracking
+- Focus / short break / long break timer with persisted state
+- Analytics: daily focus time, weekly chart, activity log, day streak
 
 ## Prerequisites
 
 - Node.js 20+
-- A [Supabase](https://supabase.com) project with Google OAuth enabled
+- A [Supabase](https://supabase.com) project with Google OAuth configured
 
 ## Setup
 
 1. Install dependencies:
 
-   ```bash
-   cd focustask
-   npm install
-   ```
+```bash
+cd focustask
+npm install
+```
 
 2. Copy environment variables:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+cp .env.example .env.local
+```
 
-   Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from your Supabase project settings.
+Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from your Supabase project settings.
 
 3. Apply the database schema in the Supabase SQL Editor:
 
-   - New project: run [`supabase_schema.sql`](./supabase_schema.sql)
-   - Existing DB with the old `duration_seconds > 0` constraint: also run [`migrations/001_task_done_zero_duration.sql`](./migrations/001_task_done_zero_duration.sql)
+```bash
+# Run supabase_schema.sql
+```
 
-4. Configure Google OAuth in Supabase (Authentication → Providers) and add your site URL plus `http://localhost:3000/auth/callback` as redirect URLs.
+For existing databases that predate `user_id` columns, see `supabase/migrations/001_auth_rls.sql`.
 
-5. Start the dev server:
+4. Start the dev server:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
-   Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Command        | Description              |
-|----------------|--------------------------|
-| `npm run dev`  | Start development server |
-| `npm run build`| Production build         |
-| `npm run start`| Run production server    |
-| `npm run lint` | Run ESLint               |
-| `npm test`     | Run validation unit tests|
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build (runs ESLint) |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
 ## Deploy
 
-Build and deploy to any Node-compatible host (e.g. Vercel). Set the same `NEXT_PUBLIC_*` env vars in your deployment environment and add your production callback URL in Supabase.
+Deploy to Vercel (or any Node host). Set the same `NEXT_PUBLIC_*` env vars in the hosting dashboard and configure the Supabase redirect URL to `https://your-domain/auth/callback`.
+
+## Project structure
+
+- `app/` — Next.js App Router pages and API routes
+- `components/` — UI components
+- `hooks/` — Client hooks (timer, tasks, focus logs)
+- `lib/` — Validation, API helpers, analytics
+- `utils/supabase/` — Supabase SSR clients

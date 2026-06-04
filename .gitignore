@@ -1,0 +1,8 @@
+# Cursor / AI tooling
+.cursor/
+.cursorrules
+AGENTS.md
+CLAUDE.md
+SKILL.md
+skills/
+scripts/
