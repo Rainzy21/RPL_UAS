@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { TimerMode } from "@/types";
 import { useTimer } from "@/hooks/useTimer";
 
@@ -78,9 +78,10 @@ const MODES: { label: TimerMode; icon: React.ReactNode; default: number }[] = [
 
 function playBeep() {
   try {
-    const ctx = new (
-      window.AudioContext || (window as any).webkitAudioContext
-    )();
+    const AudioContextClass =
+      window.AudioContext ?? window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
     [880, 660, 880].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -108,23 +109,23 @@ export default function FocusTimer({
 }: Props) {
   const [justCompleted, setJustCompleted] = useState(false);
 
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
 
   const handleComplete = useCallback(
-    (mode: TimerMode, taskId: string | null, taskTitle: string | null, durationSeconds: number) => {
+    (mode: TimerMode, _taskId: string | null, _taskTitle: string | null, durationSeconds: number) => {
       playBeep();
       setJustCompleted(true);
       setTimeout(() => setJustCompleted(false), 3000);
-      onSessionComplete(mode, taskId, taskTitle, durationSeconds);
+      onSessionComplete(mode, lockedTaskId, lockedTaskTitle, durationSeconds);
     },
-    [onSessionComplete],
+    [onSessionComplete, lockedTaskId, lockedTaskTitle],
   );
 
   const { state, setMode, setCustomDuration, start, pause, reset, progress } =

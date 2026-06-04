@@ -15,7 +15,8 @@ export default function DashboardPage() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [lockedTaskId, setLockedTaskId] = useState<string | null>(null);
   const [lockedTaskTitle, setLockedTaskTitle] = useState<string | null>(null);
-  
+  const [sessionLogError, setSessionLogError] = useState<string | null>(null);
+
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -34,7 +35,8 @@ export default function DashboardPage() {
       durationSeconds: number,
     ) => {
       try {
-        await fetch("/api/focus-logs", {
+        setSessionLogError(null);
+        const res = await fetch("/api/focus-logs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -43,12 +45,20 @@ export default function DashboardPage() {
             session_type: mode,
           }),
         });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to save session");
+        }
         if (mode === "Focus") {
           setSessionCount((n) => n + 1);
           setIsTimerRunning(false);
         }
         setAnalyticsRefresh((n) => n + 1);
-      } catch {}
+      } catch (err: unknown) {
+        setSessionLogError(
+          err instanceof Error ? err.message : "Failed to save session",
+        );
+      }
     },
     [],
   );
@@ -110,6 +120,9 @@ export default function DashboardPage() {
 
           {/* Timer panel */}
           <div className="panel flex flex-col min-h-[450px] lg:min-h-0">
+            {sessionLogError && (
+              <p className="mx-4 mt-3 text-[11px] text-red-400">{sessionLogError}</p>
+            )}
             <FocusTimer
               lockedTaskId={lockedTaskId}
               lockedTaskTitle={lockedTaskTitle}

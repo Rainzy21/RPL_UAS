@@ -33,7 +33,7 @@ const SESSION_BADGE: Record<string, string> = {
 };
 
 export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }: Props) {
-  const { logs, analytics, loading, fetchLogs } = useFocusLogs();
+  const { logs, analytics, loading, error, fetchLogs } = useFocusLogs();
 
   useEffect(() => { fetchLogs(tasksCompleted); }, [fetchLogs, tasksCompleted, refreshTrigger]);
 
@@ -56,6 +56,10 @@ export default function Analytics({ tasksCompleted, totalTasks, refreshTrigger }
           {dateLabel}
         </div>
       </div>
+
+      {error && (
+        <p className="mb-4 text-[11px] text-red-400">{error}</p>
+      )}
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">

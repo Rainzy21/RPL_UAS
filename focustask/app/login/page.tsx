@@ -5,9 +5,11 @@ import { useState } from "react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setLoginError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -17,7 +19,7 @@ export default function LoginPage() {
     });
 
     if (error) {
-      alert("Error logging in: " + error.message);
+      setLoginError(error.message || "Could not start sign-in. Please try again.");
       setLoading(false);
     }
   };
@@ -50,6 +52,12 @@ export default function LoginPage() {
         <p className="text-sm text-white/50 mb-8 leading-relaxed">
           Unlock your productivity potential. Sign in to sync your tasks and focus logs securely.
         </p>
+
+        {loginError && (
+          <p className="w-full mb-4 text-[12px] text-red-400 text-left px-1">
+            {loginError}
+          </p>
+        )}
 
         <button
           onClick={handleGoogleLogin}

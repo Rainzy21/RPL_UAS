@@ -56,9 +56,9 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Jika user tidak login dan mencoba mengakses halaman selain /login atau /auth
+  // Redirect unauthenticated users away from protected routes
   if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth')) {
-    // izinkan akses ke public assets atau _next/static, dll
+    // Allow Next.js internals and static assets
     if (
       !request.nextUrl.pathname.startsWith('/_next') &&
       !request.nextUrl.pathname.startsWith('/favicon.ico')
@@ -69,7 +69,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Jika user sudah login dan mencoba mengakses /login, redirect ke /
+  // Logged-in users should not see the login page
   if (user && request.nextUrl.pathname.startsWith('/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'

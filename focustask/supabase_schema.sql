@@ -1,6 +1,9 @@
 -- ============================================================
--- FocusTask — Supabase Database Setup
--- Run this in your Supabase SQL Editor
+-- DeepSession / FocusTask — Supabase Database Setup
+-- Run this in your Supabase SQL Editor for new projects.
+--
+-- Upgrading an older database? Run supabase/migrations/001_auth_rls.sql
+-- instead of re-running this full script.
 -- ============================================================
 
 -- 1. Tasks table

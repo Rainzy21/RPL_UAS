@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Task } from '@/types';
-import { supabase } from '@/lib/supabase';
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Something went wrong';
+}
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -11,54 +14,17 @@ export function useTasks() {
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/tasks');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch tasks');
       setTasks(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!supabase) return;
-
-    const channel = supabase
-      .channel('tasks_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setTasks((prev) => {
-              if (prev.find((t) => t.id === payload.new.id)) return prev;
-              return [...prev, payload.new as Task].sort((a, b) =>
-                a.due_date.localeCompare(b.due_date)
-              );
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setTasks((prev) =>
-              prev.map((t) =>
-                t.id === payload.new.id ? { ...t, ...(payload.new as Task) } : t
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const addTask = useCallback(async (
@@ -87,7 +53,6 @@ export function useTasks() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
-    // Log the task completion as an activity
     if (is_completed) {
       try {
         await fetch('/api/focus-logs', {
@@ -95,7 +60,7 @@ export function useTasks() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             task_id: id,
-            duration_seconds: 1, // Minimum allowed duration by DB constraint
+            duration_seconds: 1,
             session_type: 'Task Done',
           }),
         });
@@ -109,7 +74,8 @@ export function useTasks() {
 
   const deleteTask = useCallback(async (id: string) => {
     const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete task');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to delete task');
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 

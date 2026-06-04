@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { apiError, validationError } from '@/lib/api-errors';
+import { validateTaskPatch } from '@/lib/validation';
 
 export async function PATCH(
   req: Request,
@@ -7,22 +9,31 @@ export async function PATCH(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { id } = await params;
-  const body = await req.json();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return validationError('Invalid JSON body');
+  }
+
+  const parsed = validateTaskPatch(body);
+  if (!parsed.ok) return validationError(parsed.error);
 
   const { data, error } = await supabase
     .from('tasks')
-    .update(body)
+    .update(parsed.data)
     .eq('id', id)
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return apiError('PATCH /api/tasks/[id]', error);
   return NextResponse.json(data);
 }
 
@@ -32,7 +43,7 @@ export async function DELETE(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -44,6 +55,6 @@ export async function DELETE(
     .delete()
     .eq('id', id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return apiError('DELETE /api/tasks/[id]', error);
   return NextResponse.json({ success: true });
 }

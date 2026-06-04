@@ -15,7 +15,7 @@ type FilterTab = "All" | "Active" | "Completed";
 const PRIORITIES: Task["priority"][] = ["Low", "Medium", "High"];
 
 export default function TaskManagement({ onTasksChange, onSelectTask, lockedTaskId }: Props) {
-  const { tasks, loading, fetchTasks, addTask, toggleTask, deleteTask } =
+  const { tasks, loading, error: tasksError, fetchTasks, addTask, toggleTask, deleteTask } =
     useTasks();
   const [filter, setFilter] = useState<FilterTab>("All");
   const [showForm, setShowForm] = useState(false);
@@ -51,8 +51,8 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
       setEstimatedHours(1);
       setDueDate("");
       setShowForm(false);
-    } catch (err: any) {
-      setFormError(err.message);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to add task');
     } finally {
       setSubmitting(false);
     }
@@ -132,9 +132,8 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Task description..."
-            style={fieldStyle}
             className="w-full px-3 py-2.5 text-[13px] outline-none"
-            css-color="rgba(255,255,255,0.8)"
+            style={{ ...fieldStyle, color: 'rgba(255,255,255,0.8)' }}
           />
 
           {/* Due date */}
@@ -191,7 +190,7 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
           {/* Priority + hours — one row */}
           <div className="flex items-center gap-2">
             {/* Priority (separated buttons) */}
-            <div className="flex flex-2 gap-2">
+            <div className="flex flex-[2] gap-2">
               {PRIORITIES.map((p) => (
                 <button
                   key={p}
@@ -212,7 +211,7 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
                     borderRadius: "10px",
                     outline: "none",
                   }}
-                  className="flex-4 py-2 text-[10px] font-bold transition-all duration-150 hover:opacity-80"
+                  className="flex-1 py-2 text-[10px] font-bold transition-all duration-150 hover:opacity-80"
                 >
                   {p}
                 </button>
@@ -320,6 +319,12 @@ export default function TaskManagement({ onTasksChange, onSelectTask, lockedTask
           </button>
         ))}
       </div>
+
+      {tasksError && (
+        <p className="mx-4 mb-2 text-[11px]" style={{ color: '#f87171' }}>
+          {tasksError}
+        </p>
+      )}
 
       {/* ── Task list ── */}
       <div className="flex-1 overflow-y-auto px-1 pb-2">
