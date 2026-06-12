@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { TimerMode } from "@/types";
 import { useTimer } from "@/hooks/useTimer";
 
@@ -12,7 +18,7 @@ interface Props {
     mode: TimerMode,
     taskId: string | null,
     taskTitle: string | null,
-    durationSeconds: number
+    durationSeconds: number,
   ) => void;
 }
 
@@ -78,8 +84,7 @@ const MODES: { label: TimerMode; icon: React.ReactNode; default: number }[] = [
 
 function playBeep() {
   try {
-    const AudioContextClass =
-      window.AudioContext ?? window.webkitAudioContext;
+    const AudioContextClass = window.AudioContext ?? window.webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
     [880, 660, 880].forEach((freq, i) => {
@@ -119,7 +124,12 @@ export default function FocusTimer({
   const [customMinutes, setCustomMinutes] = useState("");
 
   const handleComplete = useCallback(
-    (mode: TimerMode, _taskId: string | null, _taskTitle: string | null, durationSeconds: number) => {
+    (
+      mode: TimerMode,
+      _taskId: string | null,
+      _taskTitle: string | null,
+      durationSeconds: number,
+    ) => {
       playBeep();
       setJustCompleted(true);
       setTimeout(() => setJustCompleted(false), 3000);
@@ -145,7 +155,7 @@ export default function FocusTimer({
   const displayProgress = mounted ? progress : 0;
   const displayMode = mounted ? state.mode : "Focus";
   const displayIsRunning = mounted ? state.isRunning : false;
-  
+
   const displayRemaining = mounted ? state.remainingSeconds : 30 * 60;
   const mins = Math.floor(displayRemaining / 60)
     .toString()
@@ -222,7 +232,9 @@ export default function FocusTimer({
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 107}
-                strokeDashoffset={2 * Math.PI * 107 * (1 - displayProgress / 100)}
+                strokeDashoffset={
+                  2 * Math.PI * 107 * (1 - displayProgress / 100)
+                }
                 style={{ transition: "stroke-dashoffset 0.9s linear" }}
               />
             )}
@@ -256,7 +268,9 @@ export default function FocusTimer({
             <span
               onClick={() => {
                 if (!state.isRunning) {
-                  setCustomMinutes(Math.floor(displayRemaining / 60).toString());
+                  setCustomMinutes(
+                    Math.floor(displayRemaining / 60).toString(),
+                  );
                   setIsEditingTime(true);
                 }
               }}
@@ -266,7 +280,9 @@ export default function FocusTimer({
                   ? "0 0 24px rgba(139,92,246,0.35)"
                   : "none",
               }}
-              title={!displayIsRunning ? "Click to edit timer duration" : undefined}
+              title={
+                !displayIsRunning ? "Click to edit timer duration" : undefined
+              }
             >
               {mins}:{secs}
             </span>

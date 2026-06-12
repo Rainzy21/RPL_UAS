@@ -6,7 +6,7 @@ import { TimerState, TimerMode } from '@/types';
 const LS_KEY = 'focustask_timer_state';
 
 const DEFAULT_DURATIONS: Record<TimerMode, number> = {
-  'Focus': 30 * 60,
+  'Focus': 1 * 60,
   'Short Break': 5 * 60,
   'Long Break': 15 * 60,
 };
