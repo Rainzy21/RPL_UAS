@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TimerState, TimerMode } from '@/types';
 
-const LS_KEY = 'focustask_timer_state';
+const LS_KEY = 'focustask_timer_state_v2';
 
 const DEFAULT_DURATIONS: Record<TimerMode, number> = {
   'Focus': 1 * 60,
